@@ -1,42 +1,40 @@
--- Drop tables if they exist
-DROP TABLE IF EXISTS fact_weather;
-DROP TABLE IF EXISTS dim_time;
-DROP TABLE IF EXISTS dim_station;
-DROP TABLE IF EXISTS dim_source;
-
--- Station metadata
-CREATE TABLE dim_station (
-    station_id VARCHAR(20) PRIMARY KEY,
-    station_name VARCHAR(255),
-    latitude FLOAT,
-    longitude FLOAT,
-    elevation FLOAT
+-- sql/ddl.sql
+-- Create staging table to load CSV
+CREATE TABLE IF NOT EXISTS staging_weather (
+  station_id     TEXT,
+  name            TEXT,
+  latitude        DOUBLE PRECISION,
+  longitude       DOUBLE PRECISION,
+  elevation       DOUBLE PRECISION,
+  ts              TIMESTAMP,   -- parsed from DATE column in CSV
+  tavg            DOUBLE PRECISION,
+  tmax            DOUBLE PRECISION,
+  tmin            DOUBLE PRECISION,
+  prcp            DOUBLE PRECISION
 );
 
--- Time dimension
-CREATE TABLE dim_time (
-    time_id SERIAL PRIMARY KEY,
-    date DATE UNIQUE,
-    year INT,
-    month INT,
-    day INT
+-- Dim: stations
+CREATE TABLE IF NOT EXISTS dim_station (
+  station_key     SERIAL PRIMARY KEY,
+  station_id      TEXT UNIQUE,
+  name            TEXT,
+  latitude        DOUBLE PRECISION,
+  longitude       DOUBLE PRECISION,
+  elevation       DOUBLE PRECISION
 );
 
--- Source info with UNIQUE constraint on source_name
-CREATE TABLE dim_source (
-    source_id SERIAL PRIMARY KEY,
-    source_name VARCHAR(255) UNIQUE,
-    source_url VARCHAR(255)
+-- Fact: daily aggregated observations
+CREATE TABLE IF NOT EXISTS fact_daily_obs (
+  fact_id         BIGSERIAL PRIMARY KEY,
+  station_key     INT REFERENCES dim_station(station_key),
+  day_date        DATE NOT NULL,
+  temperature_avg DOUBLE PRECISION,
+  prcp_sum        DOUBLE PRECISION,
+  obs_count       INT,
+  year            INT
 );
 
--- Fact table
-CREATE TABLE fact_weather (
-    id SERIAL PRIMARY KEY,
-    station_id VARCHAR(20) REFERENCES dim_station(station_id),
-    time_id INT REFERENCES dim_time(time_id),
-    source_id INT REFERENCES dim_source(source_id),
-    prcp FLOAT,
-    tavg FLOAT,
-    tmax FLOAT,
-    tmin FLOAT
-);
+-- Helpful indexes
+CREATE INDEX IF NOT EXISTS idx_staging_ts ON staging_weather(ts);
+CREATE INDEX IF NOT EXISTS idx_fact_station_date ON fact_daily_obs(station_key, day_date);
+CREATE INDEX IF NOT EXISTS idx_fact_year ON fact_daily_obs(year);
