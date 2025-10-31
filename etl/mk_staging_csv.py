@@ -2,9 +2,8 @@
 import pandas as pd
 from pathlib import Path
 
-# INPUT: change this if you want to use a different source CSV
-# If you produced fake data earlier, use that; otherwise use parsed raw CSV
-INPUT = Path("etl/fake_full_weather.csv")  # or Path("raw/noaa_weather_new.csv")
+
+INPUT = Path("etl/noaa_weather_new.csv")  # or Path("raw/noaa_weather_new.csv")
 OUTPUT = Path("etl/staging_weather_ready.csv")
 
 print("Reading:", INPUT)
